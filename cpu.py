@@ -64,6 +64,10 @@ class CPU:
         self.branchtable[ADD] = self.handle_add
         self.branchtable[SUB] = self.handle_sub
         self.branchtable[MUL] = self.handle_mul
+        self.branchtable[CMP] = self.handle_cmp
+        self.branchtable[JEQ] = self.handle_jeq
+        self.branchtable[JNE] = self.handle_jne
+        self.fl = 0
 
     def ram_read(self, mar):
         return self.ram[mar]
@@ -113,7 +117,7 @@ class CPU:
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.pc,
-            #self.fl,
+            self.fl,
             #self.ie,
             self.ram_read(self.pc),
             self.ram_read(self.pc + 1),
@@ -146,8 +150,8 @@ class CPU:
     def handle_hlt(self, a, b):
         sys.exit(0)
 
-    def handle_jmp(self, a, b=None):
-        self.pc = a
+    def handle_jmp(self, a, b):
+        self.pc = self.reg[a]
 
     def handle_ldi(self, a, b):
         self.reg[a] = b
@@ -188,3 +192,23 @@ class CPU:
     def handle_sub(self, a, b):
         op = "SUB"
         self.alu(op, a, b)
+
+    def handle_cmp(self, reg_a, reg_b):
+        if self.reg[reg_a] < self.reg[reg_b]:
+            self.fl = 0b100
+        elif self.reg[reg_a] > self.reg[reg_b]:
+            self.fl = 0b10
+        else:
+            self.fl = 0b1
+
+    def handle_jeq(self, a, b):
+        if self.fl & 0b1:
+            self.handle_jmp(a, b)
+        else:
+            self.pc += 2
+
+    def handle_jne(self, a, b):
+        if not self.fl & 0b1:
+            self.handle_jmp(a, b)
+        else:
+            self.pc += 2
